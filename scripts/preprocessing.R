@@ -8,24 +8,35 @@ require(qdapRegex)
 require(stopwords)
 require(tokenizers)
 
-# function to parse html and clean text
+# function to parse html and clean text (headers + paragraphs)
 parse_fn <- function(.html){
-  read_html(.html) %>%
+  
+  doc <- read_html(.html)
+  
+  # add in header extraction
+  headers <- doc %>%
+    html_elements('h1, h2, h3, h4, h5, h6') %>%
+    html_text2()
+  
+  # maintain paragraph scaping functionality
+  paragraphs <- doc %>%
     html_elements('p') %>%
-    html_text2() %>%
-    str_c(collapse = ' ') %>%
+    html_text2()
+  raw_text <- c(headers, paragraphs) %>%
+    str_c(collapse = " ")
+  clean_text <- raw_text %>%
     rm_url() %>%
     rm_email() %>%
-    str_remove_all('\'') %>%
-    str_replace_all(paste(c('\n', 
-                            '[[:punct:]]', 
-                            'nbsp', 
-                            '[[:digit:]]', 
-                            '[[:symbol:]]'),
-                          collapse = '|'), ' ') %>%
+    str_remove_all("'") %>%
+    str_replace_all(
+      paste(c('\n', '[[:punct:]]', 'nbsp', '[[:digit:]]', '[[:symbol:]]'),
+            collapse = '|'),
+      ' '
+    ) %>%
     str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
     tolower() %>%
     str_replace_all("\\s+", " ")
+  return(clean_text)
 }
 
 # function to apply to claims data
