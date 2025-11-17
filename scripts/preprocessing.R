@@ -9,21 +9,26 @@ require(stopwords)
 require(tokenizers)
 
 # function to parse html and clean text (headers + paragraphs)
-parse_fn <- function(.html){
+parse_fn <- function(.html, include_headers){
   
   doc <- read_html(.html)
   
-  # add in header extraction
-  headers <- doc %>%
-    html_elements('h1, h2, h3, h4, h5, h6') %>%
-    html_text2()
-  
-  # maintain paragraph scaping functionality
+  # maintain paragraph scraping functionality
   paragraphs <- doc %>%
     html_elements('p') %>%
     html_text2()
-  raw_text <- c(headers, paragraphs) %>%
-    str_c(collapse = " ")
+  
+  if (include_headers == True){
+    # add in header extraction
+    headers <- doc %>%
+      html_elements('h1, h2, h3, h4, h5, h6') %>%
+      html_text2()
+    raw_text <- c(headers, paragraphs) %>%
+      str_c(collapse = " ")
+  } else {
+    raw_text <- paragraphs %>%
+      str_c(collapse = " ")
+  }
   clean_text <- raw_text %>%
     rm_url() %>%
     rm_email() %>%
