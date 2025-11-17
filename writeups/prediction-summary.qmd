@@ -1,6 +1,6 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'YOUR NAMES HERE'
+author: 'Aashish Krishnan, Anishkumar Senthil, Bahaar Ahuja, Brooks Piper'
 date: today
 ---
 
@@ -24,7 +24,7 @@ Our preprocessing pipeline is built around extracting the main textual informati
 
 After, text was cleaned row-wise by sequentially removing urls, emails, punctuation, digits, symbols, whitespace, and finally, performing a lowercase standardization. 
 
-Lastly, the text is tokenized, lemmatized, and the TF-IDF (Term Frequency - Inverse Document Frequency) matrix is calculated. This formulation quantitatively represents the cleaned text by describing both how frequently words appear with Term Frequency (TF) and how uncommon or informative words are across all documents (Inverse Docume Frequency). Collectively, this means that words will receive a high TF-IDF if they appear infrequently but contribute a lot of meaning, and a lower TF-IDF if they appear frequently but contribute little meaning.
+Lastly, the text is tokenized, lemmatized, and the TF-IDF (Term Frequency - Inverse Document Frequency) matrix is calculated. This formulation quantitatively represents the cleaned text by describing both how frequently words appear with Term Frequency (TF) and how uncommon or informative words are across all documents with Inverse Document Frequency (IDF). Collectively, this means that words will receive a high TF-IDF if they appear infrequently but contribute a lot of meaning, and a lower TF-IDF if they appear frequently but contribute little meaning.
 
 ### Methods
 
