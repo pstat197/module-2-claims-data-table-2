@@ -13,20 +13,16 @@ parse_fn <- function(.html, include_headers){
   
   doc <- read_html(.html)
   
-  # maintain paragraph scraping functionality
-  paragraphs <- doc %>%
-    html_elements('p') %>%
-    html_text2()
-  
-  if (include_headers == True){
-    # add in header extraction
-    headers <- doc %>%
-      html_elements('h1, h2, h3, h4, h5, h6') %>%
-      html_text2()
-    raw_text <- c(headers, paragraphs) %>%
+  # add in header extraction if TRUE
+  if (include_headers == TRUE){
+    raw_test <- doc %>%
+      html_elements('p, h1, h2, h3, h4, h5, h6') %>%
+      html_text2()  %>%
       str_c(collapse = " ")
   } else {
-    raw_text <- paragraphs %>%
+    raw_test <- doc %>%
+      html_elements('p') %>%
+      html_text2()  %>%
       str_c(collapse = " ")
   }
   clean_text <- raw_text %>%
