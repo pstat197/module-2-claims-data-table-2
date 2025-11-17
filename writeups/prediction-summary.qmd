@@ -20,6 +20,12 @@ In one paragraph lay out your preprocessing pipeline. No need to provide exact s
 
 -   how cleaned text was represented quantitatively
 
+Our preprocessing pipeline is built around extracting the main textual information from each webpage, including both paragraph text and header elements (both large and small i.e. h1, h2, h3, h4, h5, h6), to harness the detail within the main body content in addition to high-level summary descriptions found within titles and subtitles.
+
+After, text was cleaned row-wise by sequentially removing urls, emails, punctuation, digits, symbols, whitespace, and finally, performing a lowercase standardization. 
+
+Lastly, the text is tokenized, lemmatized, and the TF-IDF (Term Frequency - Inverse Document Frequency) matrix is calculated. This formulation quantitatively represents the cleaned text by describing both how frequently words appear with Term Frequency (TF) and how uncommon or informative words are across all documents (Inverse Docume Frequency). Collectively, this means that words will receive a high TF-IDF if they appear infrequently but contribute a lot of meaning, and a lower TF-IDF if they appear frequently but contribute little meaning.
+
 ### Methods
 
 Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
