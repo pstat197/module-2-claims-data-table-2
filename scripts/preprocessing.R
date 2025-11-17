@@ -15,12 +15,12 @@ parse_fn <- function(.html, include_headers){
   
   # add in header extraction if TRUE
   if (include_headers == TRUE){
-    raw_test <- doc %>%
+    raw_text <- doc %>%
       html_elements('p, h1, h2, h3, h4, h5, h6') %>%
       html_text2()  %>%
       str_c(collapse = " ")
   } else {
-    raw_test <- doc %>%
+    raw_text <- doc %>%
       html_elements('p') %>%
       html_text2()  %>%
       str_c(collapse = " ")
