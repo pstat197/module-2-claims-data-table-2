@@ -1,11 +1,3 @@
-"""
-Preliminary Task 3: Neural network vs logistic PCA baseline
-using claims_clean from claims-clean-example.RData.
-
-Run from project root:
-    (tfenv) python scripts/preliminary_task3_nn.py
-"""
-
 import pyreadr
 import numpy as np
 
@@ -18,32 +10,23 @@ from sklearn.metrics import accuracy_score, f1_score
 
 from tensorflow import keras
 
-print(">>> RUNNING preliminary_task3_nn.py (claims-clean-example.RData) <<<")
-
-# -----------------------------
-# 1. Load data from .RData
-# -----------------------------
 
 RDATA_PATH = "data/claims-clean-example.RData"
 
 result = pyreadr.read_r(RDATA_PATH)
 
-# Prefer the object named 'claims_clean' if it exists
 if "claims_clean" in result:
     df = result["claims_clean"]
 else:
-    # Fallback: first object in the file
     df = next(iter(result.values()))
 
 cols = list(df.columns)
 print("Columns in data:", cols)
 
-# ---- Detect id, text, and label columns ----
 id_col = None
 text_col = None
 label_col = None
 
-# ID column: prefer ".id", else anything containing "id"
 if ".id" in cols:
     id_col = ".id"
 else:
@@ -52,7 +35,6 @@ else:
             id_col = c
             break
 
-# Text column: prefer text_tmp, else anything containing "text"
 for c in cols:
     if "text_tmp" in c.lower():
         text_col = c
@@ -63,7 +45,6 @@ if text_col is None:
             text_col = c
             break
 
-# Label column: prefer bclass
 if "bclass" in cols:
     label_col = "bclass"
 
@@ -77,12 +58,10 @@ if id_col is None or text_col is None or label_col is None:
         "Check 'Columns in data:' and set id_col/text_col/label_col manually."
     )
 
-# Keep only needed columns and clean
 df = df[[id_col, text_col, label_col]].dropna()
 df = df.rename(columns={id_col: ".id", text_col: "text_tmp", label_col: "bclass"})
 df["text_tmp"] = df["text_tmp"].astype(str)
 
-# Encode labels as 0/1
 df["bclass"] = df["bclass"].astype("category")
 class_names = list(df["bclass"].cat.categories)
 y = df["bclass"].cat.codes.to_numpy()
@@ -92,9 +71,7 @@ print("Number of rows:", len(df))
 print("Class labels:", class_names)
 print("Label counts:", np.bincount(y))
 
-# -----------------------------
-# 2. Train / test split
-# -----------------------------
+
 
 X_train_text, X_test_text, y_train, y_test = train_test_split(
     X_text,
@@ -104,9 +81,6 @@ X_train_text, X_test_text, y_train, y_test = train_test_split(
     stratify=y,
 )
 
-# -----------------------------
-# 3. TF–IDF features
-# -----------------------------
 
 tfidf = TfidfVectorizer(
     max_features=20000,
@@ -120,9 +94,6 @@ X_test_tfidf = tfidf.transform(X_test_text)
 print("TF–IDF shape (train):", X_train_tfidf.shape)
 print("TF–IDF shape (test):", X_test_tfidf.shape)
 
-# -----------------------------
-# 4. Logistic PCA baseline
-# -----------------------------
 
 n_components = 100
 
@@ -131,7 +102,7 @@ logit_pca_model = Pipeline([
     ("clf", LogisticRegression(max_iter=1000)),
 ])
 
-print("\nFitting logistic PCA baseline...")
+print("\nFitting logistic PCA baseline")
 logit_pca_model.fit(X_train_tfidf, y_train)
 logit_pred = logit_pca_model.predict(X_test_tfidf)
 
@@ -142,9 +113,7 @@ print("=== Logistic PCA baseline ===")
 print(f"Accuracy: {logit_acc:.4f}")
 print(f"F1 score: {logit_f1:.4f}")
 
-# -----------------------------
-# 5. Neural network (Keras)
-# -----------------------------
+
 
 X_train_dense = X_train_tfidf.astype("float32").toarray()
 X_test_dense = X_test_tfidf.astype("float32").toarray()
@@ -163,7 +132,7 @@ nn_model.compile(
     metrics=["accuracy"],
 )
 
-print("\nTraining neural network...")
+print("\nTraining neural network")
 history = nn_model.fit(
     X_train_dense,
     y_train,
@@ -183,6 +152,6 @@ print("\n=== Neural network model ===")
 print(f"Accuracy: {nn_acc:.4f}")
 print(f"F1 score: {nn_f1:.4f}")
 
-print("\nClass mapping (numeric → label):")
+print("\nClass mapping (numeric to label):")
 for idx, name in enumerate(class_names):
     print(f"{idx} -> {name}")
