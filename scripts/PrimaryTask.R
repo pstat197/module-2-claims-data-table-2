@@ -21,9 +21,7 @@ if(!"mclass" %in% names(claims_raw)) {
     mutate(mclass = bclass)
 }
 
-## =============================================================================
 ## PREPROCESSING FUNCTION
-## =============================================================================
 
 parse_fn <- function(.html){
   doc <- read_html(.html)
@@ -74,9 +72,7 @@ test_clean <- claims_test %>%
   filter(text_clean != "") %>%
   select(.id, text_clean)
 
-## =============================================================================
 ## CREATE TF-IDF FEATURES
-## =============================================================================
 
 cat("Creating TF-IDF features...\n")
 
@@ -132,9 +128,7 @@ for(col in missing_cols) {
 tfidf_test <- tfidf_test %>%
   select(.id, all_of(feature_cols))
 
-## =============================================================================
 ## MODEL 1: BINARY CLASSIFICATION (RANDOM FOREST)
-## =============================================================================
 
 cat("\n=== Training Binary Classification Model ===\n")
 set.seed(110122)
