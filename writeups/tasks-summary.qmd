@@ -1,12 +1,15 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'YOUR NAMES HERE'
+author: 'Aashish Krishnan, Anishkumar Senthil, Bahaar Ahuja, Brooks Piper'
 date: today
 ---
 
 ### HTML scraping
 
 Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.
+
+Including header content in the webscraping pipeline did not improve predictive accuracy for the logistic principal component regression model. Specifically, we saw that when only body text was included, the binary classification accuracy was 69.87%, yet when headers added, that metric dropped to 66.9%. This negative impact reveals that while intuitively, more information from the inclusion of header elements would create better inference, they do the opposite. The most likely explanation for this occurrence is that since headers often serve an attention-grabbing function whereas body content is more informative. This combined mechanism would thus skew the models understanding of the claims data, decreasing predictive accuracy.
+
 
 ### Bigrams
 
