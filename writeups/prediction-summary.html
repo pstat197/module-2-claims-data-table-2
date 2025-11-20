@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Aashish Krishnan, Anishkumar Senthil, Bahaar Ahuja, Brooks Piper">
-<meta name="dcterms.date" content="2025-11-16">
+<meta name="dcterms.date" content="2025-11-19">
 
 <title>Predictive modeling of claims status</title>
 <style>
@@ -65,7 +65,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 16, 2025</p>
+      <p class="date">November 19, 2025</p>
     </div>
   </div>
   
@@ -86,12 +86,6 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="preprocessing" class="level3">
 <h3 class="anchored" data-anchor-id="preprocessing">Preprocessing</h3>
-<p>In one paragraph lay out your preprocessing pipeline. No need to provide exact step-by-step detail; just give an overview of the main components:</p>
-<ul>
-<li><p>what text content was extracted from HTML</p></li>
-<li><p>how text was cleaned</p></li>
-<li><p>how cleaned text was represented quantitatively</p></li>
-</ul>
 <p>Our preprocessing pipeline is built around extracting the main textual information from each webpage, including both paragraph text and header elements (both large and small i.e.&nbsp;h1, h2, h3, h4, h5, h6), to harness the detail within the main body content in addition to high-level summary descriptions found within titles and subtitles.</p>
 <p>After, text was cleaned row-wise by sequentially removing urls, emails, punctuation, digits, symbols, whitespace, and finally, performing a lowercase standardization.</p>
 <p>Lastly, the text is tokenized, lemmatized, and the TF-IDF (Term Frequency - Inverse Document Frequency) matrix is calculated. This formulation quantitatively represents the cleaned text by describing both how frequently words appear with Term Frequency (TF) and how uncommon or informative words are across all documents with Inverse Document Frequency (IDF). Collectively, this means that words will receive a high TF-IDF if they appear infrequently but contribute a lot of meaning, and a lower TF-IDF if they appear frequently but contribute little meaning.</p>
