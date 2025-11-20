@@ -1,35 +1,56 @@
 ---
 title: "Predictive modeling of claims status"
-author: 'Aashish Krishnan, Anishkumar Senthil, Bahaar Ahuja, Brooks Piper'
+author: "Aashish Krishann, Brooks Piper" 
 date: today
 ---
 
 ### Abstract
 
-Provide a 3-5 sentence summary of your work on the primary task. Indicate what input data was used, what method was used for binary class predictions, what method was used for multiclass predictions, and what estimated accuracies were achieved.
-
-> *Header and paragraph content was scraped from the raw webpages and processed into term frequencies of word tokens. For binary classification, a two-layer neural network yielded an estimated 81.4% accuracy; for multiclass classification, a support vector machine gave 78% accuracy.*
+This project develops text-based models to predict the claims status of insurance-related webpages using both binary and multiclass labels. Raw HTML was processed by extracting all paragraph and header content, followed by cleaning, lemmatization, stop-word removal, tokenization, and TF-IDF feature construction. Using these features, a Random Forest classifier was trained for binary classification and achieved an estimated ~82% accuracy. A second Random Forest model was trained for the multiclass setting and achieved 80% accuracy. Both fitted models were exported along with predictions for the 929 unlabeled webpages.
 
 ### Preprocessing
 
-Our preprocessing pipeline is built around extracting the main textual information from each webpage, including both paragraph text and header elements (both large and small i.e. h1, h2, h3, h4, h5, h6), to harness the detail within the main body content in addition to high-level summary descriptions found within titles and subtitles.
-
-After, text was cleaned row-wise by sequentially removing urls, emails, punctuation, digits, symbols, whitespace, and finally, performing a lowercase standardization. 
-
-Lastly, the text is tokenized, lemmatized, and the TF-IDF (Term Frequency - Inverse Document Frequency) matrix is calculated. This formulation quantitatively represents the cleaned text by describing both how frequently words appear with Term Frequency (TF) and how uncommon or informative words are across all documents with Inverse Document Frequency (IDF). Collectively, this means that words will receive a high TF-IDF if they appear infrequently but contribute a lot of meaning, and a lower TF-IDF if they appear frequently but contribute little meaning.
+We began by ingesting the raw HTML from both the labeled training set and the unlabeled test set. For each webpage, we extracted all visible textual content from paragraphs and header tags to capture both narrative and structural information. The extracted text was then cleaned by removing URLs, emails, punctuation, digits, and symbols, standardizing spacing, and converting all content to lowercase. Words were lemmatized to reduce them to their base form, and common stop-words were removed. The cleaned text was tokenized into individual word tokens, after which we computed TF-IDF scores for each token and retained the top 100 highest-TF-IDF terms per document to reduce dimensionality while preserving informative features. These token-level features were then expanded into a sparse document-term matrix and aligned across training and test sets to ensure a consistent feature space for modeling.
 
 ### Methods
 
-Describe your final predictive models. Include one paragraph with details on the binary classification approach, and one on the multiclass approach. Include for each:
+For the predictive modeling tasks, we trained separate models for the binary and multiclass classification problems. In both cases, the TF-IDF document-term matrix served as the feature set, restricted to the top terms per document to reduce sparsity and improve computational efficiency.
 
--   what ML/statistical method was used
+# Binary Classification.
+To predict the open/closed claim status, we fit a Random Forest classifier using all TF-IDF features. The model was trained with 500 trees and an mtry parameter set to the square root of the number of features, which is standard for high-dimensional text data. The Random Forest framework was chosen for its robustness to noisy features and its strong performance on sparse inputs without the need for extensive hyperparameter tuning. The model was trained on the full training set, and performance was evaluated using out-of-bag error as well as a separate holdout validation split.
 
--   model specification and hyperparameter selection
+# Multiclass Classification.
+For the multiclass setting, we used an identical modeling framework and feature construction process. A second Random Forest classifier was trained with the same hyperparameter configuration (500 trees and mtry = $\sqrt{p}$). This choice ensured methodological consistency across tasks and allowed the model to capture nonlinear interactions among high-dimensional text features. Performance was again assessed using out-of-bag estimates alongside an 80/20 validation split to confirm model stability.
 
--   training method
+In both cases, the final fitted models were saved as deployable .rds files, and predictions for the unlabeled test set were generated in the required format.
 
 ### Results
 
-Indicate the predictive accuracy of the binary classifications and the multiclass classifications. Provide a table for each, and report sensitivity, specificity, and accuracy.[^1]
+# Binary Classification
 
-[^1]: Read [this article](https://yardstick.tidymodels.org/articles/multiclass.html) on multiclass averaging.
+The Random Forest model for the binary task (open vs. closed claims) achieved strong predictive performance. Overall accuracy was 0.80, indicating that the model correctly classified 80% of the webpages. Sensitivity and specificity were well-balanced, showing that the model performs similarly for both open and closed claim categories.
+
+```{r, echo = FALSE}
+library(knitr)
+table = data.frame(
+  Metric = c("Sensitivity", "Specificity", "Accuracy"),
+  Value = c(0.79, 0.81, 0.80)
+)
+
+kable(table, caption = "Table 1. Binary Classification Performance")
+```
+
+
+# Multiclass Classification
+
+For the multiclass task, predicting detailed claim categories, the model also achieved an overall accuracy of 0.80. Macro-averaged sensitivity and specificity were 0.78 and 0.82, re spectively, summarizing performance across all classes. This demonstrates that the model generalizes well even in a more complex prediction setting.
+
+```{r, echo = FALSE}
+library(knitr)
+table = data.frame(
+  Metric = c("Sensitivity", "Specificity", "Accuracy"),
+  Value = c(0.78, 0.82, 0.80)
+)
+
+kable(table, caption = "Table 2. Multiclass Classification Performance")
+```
