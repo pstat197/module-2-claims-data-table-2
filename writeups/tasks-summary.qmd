@@ -17,12 +17,5 @@ Do bigrams capture additional information relevant to the classification of inte
 
 ### Neural net
 
-Summarize the neural network model you trained by desribing:
-
--   architecture
-
--   optimization and loss
-
--   training epochs
-
--   predictive accuracy
+I used the TF-IDF text features as input to create a basic feed-forward neural network.  In order to identify helpful patterns in the way words appear across the claims data, the model employs a single hidden layer with 128 units.  I added a dropout layer to prevent overfitting by randomly turning off a portion of the hidden layer during training, preventing the model from being overly dependent on any one pattern.  The last layer generates a probability for whether a text passage contains pertinent claim information using a single output node.
+The model was trained using the Adam optimizer, which facilitates smooth and effective weight updates, and a standard loss function for binary classification.  The model's accuracy increased rapidly over the course of the ten training epochs before leveling off, and the validation accuracy consistently remained in the upper 70% range.  
