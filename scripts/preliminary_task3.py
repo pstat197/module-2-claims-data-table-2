@@ -14,6 +14,7 @@ from tensorflow import keras
 RDATA_PATH = "data/claims-clean-example.RData"
 
 result = pyreadr.read_r(RDATA_PATH)
+# Extract the main data frame from the RData object
 
 if "claims_clean" in result:
     df = result["claims_clean"]
@@ -23,9 +24,15 @@ else:
 cols = list(df.columns)
 print("Columns in data:", cols)
 
+
+
+
 id_col = None
 text_col = None
 label_col = None
+
+
+
 
 if ".id" in cols:
     id_col = ".id"
@@ -48,9 +55,14 @@ if text_col is None:
 if "bclass" in cols:
     label_col = "bclass"
 
+
+
 print("Detected id_col:", id_col)
 print("Detected text_col:", text_col)
 print("Detected label_col:", label_col)
+
+
+# Make sure we actually found all three required columns
 
 if id_col is None or text_col is None or label_col is None:
     raise ValueError(
@@ -67,11 +79,14 @@ class_names = list(df["bclass"].cat.categories)
 y = df["bclass"].cat.codes.to_numpy()
 X_text = df["text_tmp"].tolist()
 
+
+
 print("Number of rows:", len(df))
 print("Class labels:", class_names)
 print("Label counts:", np.bincount(y))
 
 
+# Split the data into training and test sets (80% / 20%)
 
 X_train_text, X_test_text, y_train, y_test = train_test_split(
     X_text,
@@ -95,7 +110,11 @@ print("TF–IDF shape (train):", X_train_tfidf.shape)
 print("TF–IDF shape (test):", X_test_tfidf.shape)
 
 
+
+
+
 n_components = 100
+# Pipeline: first reduce dimensionality using TruncatedSVD (PCA-like),
 
 logit_pca_model = Pipeline([
     ("svd", TruncatedSVD(n_components=n_components, random_state=42)),
@@ -115,9 +134,13 @@ print(f"F1 score: {logit_f1:.4f}")
 
 
 
+
+
+
 X_train_dense = X_train_tfidf.astype("float32").toarray()
 X_test_dense = X_test_tfidf.astype("float32").toarray()
 input_dim = X_train_dense.shape[1]
+# Define a simple feed-forward neural network architecture:
 
 nn_model = keras.Sequential([
     keras.layers.Input(shape=(input_dim,)),
@@ -147,6 +170,8 @@ y_pred = (y_pred_proba >= 0.5).astype("int32")
 
 nn_acc = accuracy_score(y_test, y_pred)
 nn_f1 = f1_score(y_test, y_pred, average="binary")
+
+
 
 print("\n=== Neural network model ===")
 print(f"Accuracy: {nn_acc:.4f}")
