@@ -17,12 +17,7 @@ Do bigrams capture additional information relevant to the classification of inte
 
 ### Neural net
 
-Summarize the neural network model you trained by desribing:
-
--   architecture
-
--   optimization and loss
-
--   training epochs
-
--   predictive accuracy
+I used the TF-IDF text features as input to create a basic feed-forward neural network.  In order to identify helpful patterns in the way words appear across the claims data, the model employs a single hidden layer with 128 units.  I added a dropout layer to prevent overfitting by randomly turning off a portion of the hidden layer during training, preventing the model from being overly dependent on any one pattern.  The last layer generates a probability for whether a text passage contains pertinent claim information using a single output node.
+The model was trained using the Adam optimizer, which facilitates smooth and effective weight updates, and a standard loss function for binary classification.  The model's accuracy increased rapidly over the course of the ten training epochs before leveling off, and the validation accuracy consistently remained in the upper 70% range.  This pattern indicated that the model was picking up helpful patterns without starting to overfit.
+The neural network performed well on the classification challenge after training, achieving 0.7710 accuracy and 0.7906 F1.  The neural network clearly outperformed the logistic PCA baseline trained on the same TF-IDF data, which yielded 0.7196 accuracy and 0.7143 F1.  Additionally, it performed better than the previous Task 1 results, when logistic PCA trained solely on paragraph text obtained about 69.9% accuracy.  
+Overall, the neural network outperformed the simpler PCA-based logistic regression model because it was able to better utilize the rich TF–IDF features and capture correlations in the text.
