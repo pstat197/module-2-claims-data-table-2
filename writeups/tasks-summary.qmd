@@ -1,14 +1,12 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'Aashish Krishnan, Anishkumar Senthil, Bahaar Ahuja, Brooks Piper'
+author: 'Anishkumar Senthil, Bahaar Ahuja, Brooks Piper'
 date: today
 ---
 
 ### HTML scraping
 
-Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.
-
-Including header content in the webscraping pipeline did not improve predictive accuracy for the logistic principal component regression model. Specifically, we saw that when only body text was included, the binary classification accuracy was 69.87%, yet when headers added, that metric dropped to 66.9%. This negative impact reveals that while intuitively, more information from the inclusion of header elements would create better inference, they do the opposite. The most likely explanation for this occurrence is that since headers often serve an attention-grabbing function whereas body content is more informative. This combined mechanism would thus skew the models understanding of the claims data, decreasing predictive accuracy.
+The inclusion of header content in the web scraping pipeline did not improve predictive accuracy for the logistic principal component regression model. Specifically, we saw that when the model was trained on body text alone, the binary classification accuracy was 69.87%, yet when headers were incorporated, that metric dropped to 66.9%. This negative impact reveals that while intuitively, more information from the inclusion of header elements would create better inference, they do the opposite. The most likely explanation for this occurrence is that since headers often serve an attention-grabbing function, whereas body content is intended to be primarily informative. This combined mechanism would thus skew the models understanding of the claims data, decreasing predictive accuracy.
 
 
 ### Bigrams
@@ -17,7 +15,7 @@ Do bigrams capture additional information relevant to the classification of inte
 
 ### Neural net
 
-I used the TF-IDF text features as input to create a basic feed-forward neural network.  In order to identify helpful patterns in the way words appear across the claims data, the model employs a single hidden layer with 128 units.  I added a dropout layer to prevent overfitting by randomly turning off a portion of the hidden layer during training, preventing the model from being overly dependent on any one pattern.  The last layer generates a probability for whether a text passage contains pertinent claim information using a single output node.
-The model was trained using the Adam optimizer, which facilitates smooth and effective weight updates, and a standard loss function for binary classification.  The model's accuracy increased rapidly over the course of the ten training epochs before leveling off, and the validation accuracy consistently remained in the upper 70% range.  This pattern indicated that the model was picking up helpful patterns without starting to overfit.
-The neural network performed well on the classification challenge after training, achieving 0.7710 accuracy and 0.7906 F1.  The neural network clearly outperformed the logistic PCA baseline trained on the same TF-IDF data, which yielded 0.7196 accuracy and 0.7143 F1.  Additionally, it performed better than the previous Task 1 results, when logistic PCA trained solely on paragraph text obtained about 69.9% accuracy.  
-Overall, the neural network outperformed the simpler PCA-based logistic regression model because it was able to better utilize the rich TF–IDF features and capture correlations in the text.
+The TF-IDF text features were utilized as inputs to create a basic feed-forward neural network. In order to identify helpful patterns in the way words appear across the claims data, the model employs a single hidden layer with 128 units. A dropout layer was added to prevent overfitting by randomly turning off a portion of the hidden layer during training, preventing the model from being overly dependent on any one pattern. The last layer generates a probability for whether a text passage contains pertinent claim information using a single output node.
+The model was trained using the Adam optimizer, which facilitates smooth and effective weight updates, and a standard loss function for binary classification. Its accuracy rapidly increased over the course of the ten training epochs before leveling off, and the validation accuracy consistently remained in the upper 70% range. This pattern indicated that the model was picking up helpful patterns without starting to overfit.
+The neural network performed well on the classification challenge after training, achieving 0.7710 accuracy and 0.7906 F1. Additionally, it outperformed the logistic PCR baseline trained on the same TF-IDF data, which yielded 0.7196 accuracy and 0.7143 F1. Likewise, its predictive accuracy exceeded Task 1's results, where a logistic PCR model trained solely on paragraph text obtained about 69.9% accuracy.
+Overall, the neural network presented the most reliable predictive power---in comparison to the simpler PCA-based logistic regression model---because it was able to better utilize the rich TF–IDF features and capture correlations in the text.

@@ -6,8 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Aashish Krishnan, Anishkumar Senthil, Bahaar Ahuja, Brooks Piper">
-<meta name="dcterms.date" content="2025-11-19">
+<meta name="author" content="Anishkumar Senthil, Bahaar Ahuja, Brooks Piper">
+<meta name="dcterms.date" content="2025-11-20">
 
 <title>Summary of exploratory tasks</title>
 <style>
@@ -58,14 +58,14 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Aashish Krishnan, Anishkumar Senthil, Bahaar Ahuja, Brooks Piper </p>
+             <p>Anishkumar Senthil, Bahaar Ahuja, Brooks Piper </p>
           </div>
   </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">November 19, 2025</p>
+      <p class="date">November 20, 2025</p>
     </div>
   </div>
   
@@ -79,8 +79,7 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="html-scraping" class="level3">
 <h3 class="anchored" data-anchor-id="html-scraping">HTML scraping</h3>
-<p>Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.</p>
-<p>Including header content in the webscraping pipeline did not improve predictive accuracy for the logistic principal component regression model. Specifically, we saw that when only body text was included, the binary classification accuracy was 69.87%, yet when headers added, that metric dropped to 66.9%. This negative impact reveals that while intuitively, more information from the inclusion of header elements would create better inference, they do the opposite. The most likely explanation for this occurrence is that since headers often serve an attention-grabbing function whereas body content is more informative. This combined mechanism would thus skew the models understanding of the claims data, decreasing predictive accuracy.</p>
+<p>The inclusion of header content in the web scraping pipeline did not improve predictive accuracy for the logistic principal component regression model. Specifically, we saw that when the model was trained on body text alone, the binary classification accuracy was 69.87%, yet when headers were incorporated, that metric dropped to 66.9%. This negative impact reveals that while intuitively, more information from the inclusion of header elements would create better inference, they do the opposite. The most likely explanation for this occurrence is that since headers often serve an attention-grabbing function, whereas body content is intended to be primarily informative. This combined mechanism would thus skew the models understanding of the claims data, decreasing predictive accuracy.</p>
 </section>
 <section id="bigrams" class="level3">
 <h3 class="anchored" data-anchor-id="bigrams">Bigrams</h3>
@@ -88,13 +87,7 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="neural-net" class="level3">
 <h3 class="anchored" data-anchor-id="neural-net">Neural net</h3>
-<p>Summarize the neural network model you trained by desribing:</p>
-<ul>
-<li><p>architecture</p></li>
-<li><p>optimization and loss</p></li>
-<li><p>training epochs</p></li>
-<li><p>predictive accuracy</p></li>
-</ul>
+<p>The TF-IDF text features were utilized as inputs to create a basic feed-forward neural network. In order to identify helpful patterns in the way words appear across the claims data, the model employs a single hidden layer with 128 units. A dropout layer was added to prevent overfitting by randomly turning off a portion of the hidden layer during training, preventing the model from being overly dependent on any one pattern. The last layer generates a probability for whether a text passage contains pertinent claim information using a single output node. The model was trained using the Adam optimizer, which facilitates smooth and effective weight updates, and a standard loss function for binary classification. Its accuracy rapidly increased over the course of the ten training epochs before leveling off, and the validation accuracy consistently remained in the upper 70% range. This pattern indicated that the model was picking up helpful patterns without starting to overfit. The neural network performed well on the classification challenge after training, achieving 0.7710 accuracy and 0.7906 F1. Additionally, it outperformed the logistic PCR baseline trained on the same TF-IDF data, which yielded 0.7196 accuracy and 0.7143 F1. Likewise, its predictive accuracy exceeded Task 1’s results, where a logistic PCR model trained solely on paragraph text obtained about 69.9% accuracy. Overall, the neural network presented the most reliable predictive power—in comparison to the simpler PCA-based logistic regression model—because it was able to better utilize the rich TF–IDF features and capture correlations in the text.</p>
 </section>
 
 </main>
