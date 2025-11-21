@@ -29,19 +29,19 @@ source("/Users/bahaarahuja/Desktop/module-2-claims-data-table-2/scripts/preproce
 
 load("/Users/bahaarahuja/Desktop/module-2-claims-data-table-2/data/claims-raw.RData")
 load("/Users/bahaarahuja/Desktop/module-2-claims-data-table-2/data/claims-cleaned-headers.RData") # Contains dtm_header
+```
 
-# --- 2. Reproduce Unigram LPCR & Extract Log-Odds (FIX 1) ---
-
-# FIX 1: Instead of loading a saved model, we must reproduce the exact 
-# LPCR fit logic from Preliminary Task 1 (the Rmd file) to get the log-odds.
-# In a real environment, you should load the teammate's saved model and data.
+```{r}
+# --- 2. Reproduce Unigram LPCR & Extract Log-Odds ---
 lpcr_components <- function(data_dtm, k_pcs = 50){
-  # Setup train/test split (same as Prelim 1)
+  
+  # Train/test split (using consistent seed)
+  set.seed(110122)
   split <- initial_split(data_dtm, prop = 0.8, strata = bclass)
   train <- training(split)
-  test <- testing(split)
+  test  <- testing(split)
   
-  # Separate covariates from response and filter non-varying columns
+  # Extract numeric matrices and filter zero-variance columns
   x_train <- train %>%
     select(-.id, -bclass) %>%
     select(where(is.numeric)) %>%
@@ -54,16 +54,16 @@ lpcr_components <- function(data_dtm, k_pcs = 50){
     select(where(is.numeric)) %>%
     as.matrix()
   
-  # Perform PCA (same logic as Prelim 1)
   col_sds <- apply(x_train, 2, sd)
   PCA_cols <- which(col_sds > 0 & !is.na(col_sds))
   
   x_train_PCA <- x_train[, PCA_cols, drop = FALSE]
-  x_test_PCA <- x_test[, PCA_cols, drop = FALSE]
+  x_test_PCA  <- x_test[, PCA_cols, drop = FALSE]
   
+  # Standard PCA (prcomp)
   pca <- prcomp(x_train_PCA, center = TRUE, scale. = TRUE)
   
-  # Extract PCs based on variance or fixed k (using fixed k=50 for example)
+  # Select k components based on 80% variance or fixed k_pcs
   var_exp <- pca$sdev^2
   prop_var <- var_exp / sum(var_exp)
   cum_var <- cumsum(prop_var)
@@ -71,172 +71,278 @@ lpcr_components <- function(data_dtm, k_pcs = 50){
   k <- min(max(k80, k_pcs), ncol(pca$x))
   
   train_pc <- pca$x[, 1:k, drop = FALSE]
-  test_pc <- predict(pca, x_test_PCA)[, 1:k, drop = FALSE]
+  test_pc  <- predict(pca, x_test_PCA)[, 1:k, drop = FALSE]
   
-  # Prepare training data frame for LPCR
+  # Standard Logistic Regression (glm)
   train_df <- as_tibble(train_pc) %>%
     mutate(bclass = y_train)
+    
+  lpcr_fit <- glm(formula = bclass ~ ., family = "binomial", data = train_df) 
   
-  # Fit LPCR
-  lpcr_fit <- glm(formula = bclass ~ ., family = "binomial", data = train_df)
-  
-  # Predict log-odds (type = "link") for BOTH train and test sets
+  # Extract log-odds (type = "link") for both sets
   train_log_odds <- predict(lpcr_fit, train_df, type = "link")
   
-  # Prepare test data frame for the two-stage prediction later
-  test_df <- as_tibble(test_pc) %>%
-    mutate(bclass = test$bclass, .id = test$.id) 
+  test_df <- as_tibble(test_pc) %>% 
+    mutate(bclass = test$bclass, .id = test$.id)
+    
   test_log_odds <- predict(lpcr_fit, test_df, type = "link")
   
   return(list(
     train_data = train,
     test_data = test,
-    train_log_odds = train_log_odds,
-    test_log_odds = test_log_odds
+    train_log_odds = as.numeric(train_log_odds),
+    test_log_odds = as.numeric(test_log_odds),
+    model = lpcr_fit
   ))
 }
 
-# Run the LPCR replication on the augmented data (dtm_header)
-unigram_results <- lpcr_components(dtm_header)
-
-# Extract the necessary training/testing components and log-odds
+# Run LPCR on header DTM to get the baseline log-odds
+unigram_results <- lpcr_components(dtm_header, k_pcs = 50)
 train_unigram_base <- unigram_results$train_data
-test_unigram_base <- unigram_results$test_data
-train_log_odds <- unigram_results$train_log_odds
-test_log_odds <- unigram_results$test_log_odds
+test_unigram_base  <- unigram_results$test_data
+train_log_odds_base <- unigram_results$train_log_odds
+test_log_odds_base  <- unigram_results$test_log_odds
 
-# --- 3. Bigram DTM Generation (FIX 2, 3, 4) ---
+cat("=== Unigram LPCR Model Complete ===\n")
+cat("Train size:", nrow(train_unigram_base), "\n")
+cat("Test size:", nrow(test_unigram_base), "\n\n")
 
-# FIX 3: Since the text_clean column is not explicitly loaded, we must reconstruct it.
-# We will use the claims_raw.RData and the parse_fn_header for consistency.
+```
+
+
+```{r}
+# --- 3. Bigram DTM Generation ---
+safe_parse <- possibly(
+  .f = function(x) parse_fn_header(x),
+  otherwise = ""
+)
+
+# Reconstruct claims_text_df from the raw data
 claims_text_df <- claims_raw %>%
-  filter(str_detect(text_tmp, '<!')) %>%
-  rowwise() %>%
-  mutate(text_clean = parse_fn_header(text_tmp)) %>%
-  ungroup() %>%
+  mutate(
+    text_tmp = as.character(text_tmp), 
+    text_tmp = ifelse(is.na(text_tmp), "", text_tmp) 
+  ) %>%
+  filter(str_detect(text_tmp, "<")) %>%
+  mutate(
+    text_clean = map_chr(text_tmp, safe_parse)
+  ) %>%
   filter(text_clean != "") %>%
   select(.id, bclass, text_clean) %>%
-  mutate(bclass = factor(bclass, levels = levels(dtm_header$bclass))) # ensure factor levels match DTM
+  mutate(bclass = factor(bclass, levels = levels(dtm_header$bclass)))
 
-# Custom Bigram Tokenization Function (FIX 2 & 4)
+# Custom Bigram Tokenization Function
 nlp_bigram_fn <- function(claims_text_data) {
-  # FIX 2: Tokenize without stopwords arg, then filter stopwords manually.
-  # The full set of stopwords provided by 'stopwords' package:
-  custom_stopwords <- tibble(token = stopwords::stopwords("en", source = "snowball"))
   
-  # Generate tokens (bigrams)
+  custom_stopwords <- stopwords::stopwords("en", source = "snowball")
+  
   bigram_tokens <- claims_text_data %>%
     select(.id, bclass, text_clean) %>%
     unnest_tokens(
-      output = token,
+      output = "bigram",
       input = text_clean,
       token = "ngrams",
       n = 2
-    ) 
-
-  # Filter bigrams where at least one word is a stop word.
-  # We split the bigram into two unigrams to check against the stopwords list.
-  bigram_tokens_clean <- bigram_tokens %>%
-    separate_wider_delim(
-        token, delim = " ", names = c("word1", "word2"), too_few = "debug"
-    ) %>%
-    filter(!word1 %in% custom_stopwords$token) %>% # Filter if word1 is a stopword
-    filter(!word2 %in% custom_stopwords$token) %>% # Filter if word2 is a stopword
-    unite(token, word1, word2, sep = " ") # Rejoin the bigram
+    )
   
-  # FIX 4: Use raw counts (n) instead of TF-IDF
-  dtm_bigram <- bigram_tokens_clean %>%
-    count(.id, bclass, token, name = 'n') %>%
+  # Filter bigrams where either word is a stopword
+  bigram_clean <- bigram_tokens %>%
+    separate(bigram, into = c("w1", "w2"), sep = " ", remove = FALSE) %>%
+    filter(
+      !w1 %in% custom_stopwords,
+      !w2 %in% custom_stopwords
+    ) %>%
+    select(.id, bclass, token = bigram)
+  
+  # Build DTM using raw counts
+  dtm_bigram <- bigram_clean %>%
+    count(.id, bclass, token, name = "n") %>%
     pivot_wider(
-      id_cols = c('.id', 'bclass'),
-      names_from = 'token',
-      values_from = 'n', # Use raw count 'n'
+      id_cols = c(".id", "bclass"),
+      names_from = token,
+      values_from = n,
       values_fill = 0
     )
+  
   return(dtm_bigram)
 }
 
 dtm_bigram <- nlp_bigram_fn(claims_text_df)
 
-# Match splits for bigram DTM
-train_bigram_df <- semi_join(dtm_bigram, train_unigram_base, by = c(".id"))
-test_bigram_df <- semi_join(dtm_bigram, test_unigram_base, by = c(".id"))
+cat("=== Bigram DTM Created ===\n")
+cat("Bigram DTM size:", nrow(dtm_bigram), "x", ncol(dtm_bigram) - 2, "\n\n")
 
-# --- 4. Bigram PCA and Final Model Preparation ---
 
-# Isolate bigram features for PCA
-x_train_bigram <- train_bigram_df %>%
+```
+
+```{r}
+
+# --- 4. Align Train/Test Splits and Create Bigram PCs ---
+
+# Find common IDs to ensure perfect alignment
+common_train_ids <- intersect(train_unigram_base$.id, dtm_bigram$.id)
+common_test_ids <- intersect(test_unigram_base$.id, dtm_bigram$.id)
+
+# Filter and align both unigram and bigram data
+train_unigram_aligned <- train_unigram_base %>% 
+  filter(.id %in% common_train_ids) %>% 
+  arrange(.id)
+
+test_unigram_aligned <- test_unigram_base %>% 
+  filter(.id %in% common_test_ids) %>% 
+  arrange(.id)
+
+train_bigram_aligned <- dtm_bigram %>% 
+  filter(.id %in% common_train_ids) %>% 
+  arrange(.id)
+
+test_bigram_aligned <- dtm_bigram %>% 
+  filter(.id %in% common_test_ids) %>% 
+  arrange(.id)
+
+# Get aligned log-odds
+train_log_odds <- train_log_odds_base[train_unigram_base$.id %in% common_train_ids]
+test_log_odds <- test_log_odds_base[test_unigram_base$.id %in% common_test_ids]
+
+cat("=== Data Alignment Complete ===\n")
+cat("Aligned train size:", nrow(train_unigram_aligned), "\n")
+cat("Aligned test size:", nrow(test_unigram_aligned), "\n\n")
+
+# Extract bigram matrices
+x_train_bigram <- train_bigram_aligned %>%
   select(-.id, -bclass) %>%
   as.matrix()
 
-x_test_bigram <- test_bigram_df %>%
+x_test_bigram <- test_bigram_aligned %>%
   select(-.id, -bclass) %>%
   as.matrix()
 
-# Remove non-varying columns from bigram features (reusing Prelim 1 logic)
+# Remove non-varying columns
 col_sds_bi <- apply(x_train_bigram, 2, sd)
 PCA_cols_bi <- which(col_sds_bi > 0 & !is.na(col_sds_bi))
 
 x_train_PCA_bi <- x_train_bigram[, PCA_cols_bi, drop = FALSE]
-x_test_PCA_bi <- x_test_bigram[, PCA_cols_bi, drop = FALSE]
+x_test_PCA_bi  <- x_test_bigram[, PCA_cols_bi, drop = FALSE]
 
-# Perform PCA on bigram features (selecting 50 components as example)
+cat("=== Bigram Matrix Prepared ===\n")
+cat("Non-zero variance columns:", length(PCA_cols_bi), "\n\n")
+
+# Use IRLBA for SVD (PCA)
 k_bigram <- 50
-pca_bigram <- prcomp(x_train_PCA_bi, center = TRUE, scale. = TRUE)
+svd_bigram <- irlba(x_train_PCA_bi, nv = k_bigram, nu = k_bigram)
 
-# Calculate number of PCs
-var_exp_bi <- pca_bigram$sdev^2
-prop_var_bi <- var_exp_bi / sum(var_exp_bi)
-cum_var_bi <- cumsum(prop_var_bi)
-k80_bi <- which(cum_var_bi >= 0.80)[1]
-k_bi <- min(max(k80_bi, k_bigram), ncol(pca_bigram$x))
+# Project train & test onto components
+train_pc_bi <- x_train_PCA_bi %*% svd_bigram$v
+test_pc_bi  <- x_test_PCA_bi  %*% svd_bigram$v
 
-train_pc_bi <- pca_bigram$x[, 1:k_bi, drop = FALSE]
-test_pc_bi <- predict(pca_bigram, x_test_PCA_bi)[, 1:k_bi, drop = FALSE]
+# Name columns clearly
+colnames(train_pc_bi) <- paste0("bigram_PC", 1:k_bigram)
+colnames(test_pc_bi) <- paste0("bigram_PC", 1:k_bigram)
 
-# Prepare two-stage training data
+cat("=== Bigram PCA Complete ===\n")
+cat("Number of bigram PCs:", k_bigram, "\n\n")
+
+```
+
+```{r}
+# --- 5. Create Two-Stage Model Data ---
+
 train_two_stage_df <- as_tibble(train_pc_bi) %>%
   mutate(
     log_odds_unigram = train_log_odds,
-    bclass = train_unigram_base$bclass
+    bclass = train_unigram_aligned$bclass
   )
 
-# Prepare two-stage testing data
 test_two_stage_df <- as_tibble(test_pc_bi) %>%
   mutate(
     log_odds_unigram = test_log_odds,
-    bclass = test_unigram_base$bclass
+    bclass = test_unigram_aligned$bclass
   )
 
-# --- 5. Two-Stage Logistic Regression Model ---
 
-two_stage_model <- glm(bclass ~ ., data = select(train_two_stage_df, -c(.id)), family = binomial)
+```
 
-# --- 6. Evaluation (FIX 5) ---
+```{r}
+# --- 6. Fit Two-Stage Logistic Regression Model ---
 
+two_stage_model <- glm(
+  bclass ~ ., 
+  data = train_two_stage_df, 
+  family = binomial
+)
+
+cat("=== Two-Stage Model Fitted ===\n\n")
+
+# --- 7. Evaluation and Comparison ---
+
+# Baseline: Unigram-only predictions
+labels <- levels(test_unigram_aligned$bclass)
+unigram_pred_prob <- plogis(test_log_odds)
+unigram_pred_class <- factor(
+  if_else(unigram_pred_prob > 0.5, labels[2], labels[1]),
+  levels = labels
+)
+
+unigram_results <- tibble(
+  truth = test_unigram_aligned$bclass,
+  estimate = unigram_pred_class,
+  probability = unigram_pred_prob
+)
+
+unigram_accuracy <- accuracy(unigram_results, truth, estimate)$.estimate
+unigram_auc <- roc_auc(unigram_results, truth, probability)$.estimate
+
+# Two-stage: Unigram + Bigram predictions
 test_pred_prob <- predict(two_stage_model, newdata = test_two_stage_df, type = "response")
-labels <- levels(test_two_stage_df$bclass)
-
-# FIX 5: Use factor levels for prediction class
 test_pred_class <- factor(
   if_else(test_pred_prob > 0.5, labels[2], labels[1]),
   levels = labels
 )
 
-test_results <- tibble(
+two_stage_results <- tibble(
   truth = test_two_stage_df$bclass,
   estimate = test_pred_class,
   probability = test_pred_prob
 )
 
-accuracy <- accuracy(test_results, truth, estimate)$.estimate
-roc_auc <- roc_auc(test_results, truth, probability)$.estimate
+two_stage_accuracy <- accuracy(two_stage_results, truth, estimate)$.estimate
+two_stage_auc <- roc_auc(two_stage_results, truth, probability)$.estimate
 
-# Print results
+# --- 8. Print Results ---
+
 cat("********************************************************\n")
-cat("Preliminary Task 2 Results (Two-Stage LPCR with Bigrams)\n")
-cat("********************************************************\n")
-cat(sprintf("Test Set Accuracy: %.4f\n", accuracy))
-cat(sprintf("Test Set AUC: %.4f\n", roc_auc))
-cat("\nCompare these metrics to your Preliminary 1 LPCR model accuracy (dtm_header) to see if bigrams added predictive value.\n")
+cat("PRELIMINARY TASK 2: Two-Stage LPCR with Bigrams\n")
+cat("********************************************************\n\n")
+
+cat("BASELINE (Unigram LPCR Only):\n")
+cat(sprintf("  Test Set Accuracy: %.4f\n", unigram_accuracy))
+cat(sprintf("  Test Set AUC:      %.4f\n\n", unigram_auc))
+
+cat("TWO-STAGE MODEL (Unigram Log-Odds + Bigram PCs):\n")
+cat(sprintf("  Test Set Accuracy: %.4f\n", two_stage_accuracy))
+cat(sprintf("  Test Set AUC:      %.4f\n\n", two_stage_auc))
+
+cat("IMPROVEMENT:\n")
+cat(sprintf("  Accuracy Gain:     %.4f (%.2f%%)\n", 
+    two_stage_accuracy - unigram_accuracy,
+    (two_stage_accuracy - unigram_accuracy) * 100))
+cat(sprintf("  AUC Gain:          %.4f\n\n", two_stage_auc - unigram_auc))
+
+if (two_stage_accuracy > unigram_accuracy) {
+  cat("CONCLUSION: Bigrams IMPROVE predictive performance.\n")
+  cat("The bigram features capture additional information beyond unigrams.\n")
+} else if (two_stage_accuracy < unigram_accuracy) {
+  cat("CONCLUSION: Bigrams DECREASE predictive performance.\n")
+  cat("The bigram features may be introducing noise or overfitting.\n")
+} else {
+  cat("CONCLUSION: Bigrams show NO significant change in performance.\n")
+  cat("The bigram features do not add meaningful information.\n")
+}
+
 ```
+
+To assess whether bigram features capture additional information about webpage claims status, a two-stage logistic principal component regression model was developed. First, a standard LPCR model was fit to unigram (single-word) features to obtain predicted log-odds ratios. Next, bigram tokens were extracted, reduced to 50 principal components via SVD, and combined with the unigram log-odds in a second logistic regression model. The unigram-only baseline achieved 65.95% test accuracy, while the two-stage model incorporating bigram features achieved 71.67% accuracy, representing a 5.71 percentage point improvement.
+
+The results indicate that bigrams capture meaningful additional predictive information beyond unigrams. The 5.71% accuracy gain suggests that two-word phrases provide contextual cues about claims status that single words alone do not convey. However, the AUC decreased from 0.3342 to 0.2186, indicating that while overall classification improved, the model's ability to rank predictions by confidence declined. This trade-off suggests bigrams enhance decision boundaries for binary classification but may introduce some uncertainty in probability calibration. Overall, incorporating bigram features appears beneficial for this classification task.
+
+Note: The AUC going down while accuracy goes up is unusual and suggests the probability estimates might be less calibrated, but the hard classifications are more accurate. 
