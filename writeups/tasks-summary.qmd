@@ -11,7 +11,9 @@ The inclusion of header content in the web scraping pipeline did not improve pre
 
 ### Bigrams
 
-Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
+To assess whether bigram features capture additional information about webpage claims status, a two-stage logistic principal component regression model was developed. First, a standard LPCR model was fit to unigram features to obtain predicted log-odds ratios. Next, bigram tokens were extracted, reduced to 50 principal components via SVD, and combined with the unigram log-odds in a second logistic regression model.
+
+The results indicate that bigrams capture meaningful additional predictive information beyond unigrams. The unigram-only baseline achieved 65.95% test accuracy, while the two-stage model incorporating bigram features achieved 71.67% accuracy, representing a 5.71 percentage point improvement. However, the AUC decreased from 0.3342 to 0.2186, suggesting that while overall classification accuracy improved, the model's probability calibration declined. This trade-off indicates that two-word phrases provide valuable contextual cues for binary classification that single words alone do not convey, though future work should investigate methods to improve probability estimates while retaining the classification gains from bigram features.
 
 ### Neural net
 
