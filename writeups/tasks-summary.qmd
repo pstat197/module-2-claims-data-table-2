@@ -1,25 +1,23 @@
 ---
 title: "Summary of exploratory tasks"
-author: 'YOUR NAMES HERE'
+author: 'Anishkumar Senthil, Bahaar Ahuja, Brooks Piper'
 date: today
 ---
 
 ### HTML scraping
 
-Does including header content improve predictions? Answer the question and provide quantitative evidence supporting your answer.
+The inclusion of header content in the web scraping pipeline did not improve predictive accuracy for the logistic principal component regression model. Specifically, we saw that when the model was trained on body text alone, the binary classification accuracy was 69.87%, yet when headers were incorporated, that metric dropped to 66.9%. This negative impact reveals that while intuitively, more information from the inclusion of header elements would create better inference, they do the opposite. The most likely explanation for this occurrence is that headers often serve an attention-grabbing function, whereas body content is intended to be primarily informative. Thus, information combined from both mechanisms would skew the models understanding of the claims data, decreasing predictive accuracy.
+
 
 ### Bigrams
 
-Do bigrams capture additional information relevant to the classification of interest? Answer the question, **briefly** describe what analysis you conducted to arrive at your answer, and provide quantitative evidence supporting your answer.
+To assess whether bigram features capture additional information about webpage claims status, a two-stage logistic principal component regression model was developed. First, a standard LPCR model was fit to unigram features to obtain predicted log-odds ratios. Next, bigram tokens were extracted, reduced to 50 principal components via SVD, and combined with the unigram log-odds in a second logistic regression model.
+
+The results indicate that bigrams capture meaningful additional predictive information beyond unigrams. The unigram-only baseline achieved 65.95% test accuracy, while the two-stage model incorporating bigram features achieved 71.67% accuracy, representing a 5.71 percentage point improvement. However, the AUC decreased from 0.3342 to 0.2186, suggesting that while overall classification accuracy improved, the model's probability calibration declined. This trade-off indicates that two-word phrases provide valuable contextual cues for binary classification that single words alone do not convey, though future work should investigate methods to improve probability estimates while retaining the classification gains from bigram features.
 
 ### Neural net
 
-Summarize the neural network model you trained by desribing:
-
--   architecture
-
--   optimization and loss
-
--   training epochs
-
--   predictive accuracy
+A simple feed-forward neural network was constructed using the TF-IDF text features as inputs.  The model uses a single hidden layer with 128 units to find useful patterns in the way words appear across the claims data.  By periodically turning off a piece of the hidden layer during training, a dropout layer was introduced to prevent overfitting and keep the model from being unduly reliant on any one pattern.  Using a single output node, the final layer determines the likelihood that a text passage contains relevant claim information.
+The model was trained with a standard loss function for binary classification and the Adam optimizer, which enables efficient and seamless weight updates. Over the course of the ten training epochs, its accuracy increased quickly before leveling off, and the validation accuracy continuously stayed in the upper 70% range. This pattern showed that the model was learning useful patterns without being overfit.
+The neural network performed well on the classification challenge after training, achieving 0.7710 accuracy and 0.7906 F1. Additionally, it outperformed the logistic PCR baseline trained on the same TF-IDF data, which yielded 0.7196 accuracy and 0.7143 F1. Likewise, its predictive accuracy exceeded Task 1's results, where a logistic PCR model trained solely on paragraph text obtained about 69.9% accuracy.
+Overall, the neural network presented the most reliable predictive power in comparison to the simpler PCA-based logistic regression model because it was able to better utilize the rich TF–IDF features and capture correlations in the text.

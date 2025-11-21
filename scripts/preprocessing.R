@@ -8,36 +8,85 @@ require(qdapRegex)
 require(stopwords)
 require(tokenizers)
 
-# function to parse html and clean text
-parse_fn <- function(.html){
-  read_html(.html) %>%
-    html_elements('p') %>%
+# Load data
+load('../data/claims-raw.RData')
+
+# function to parse html and clean text (headers + paragraphs)
+parse_fn_paragraph <- function(.html){
+  
+  doc <- read_html(.html)
+  
+  if(all(is.na(doc))){
+    return("")
+  }
+  
+  raw_text <- doc %>%
+    html_elements("p") %>%
     html_text2() %>%
-    str_c(collapse = ' ') %>%
+    str_c(collapse = " ")
+  
+  clean_text <- raw_text %>%
     rm_url() %>%
     rm_email() %>%
-    str_remove_all('\'') %>%
-    str_replace_all(paste(c('\n', 
-                            '[[:punct:]]', 
-                            'nbsp', 
-                            '[[:digit:]]', 
-                            '[[:symbol:]]'),
-                          collapse = '|'), ' ') %>%
+    str_remove_all("'") %>%
+    str_replace_all(
+      paste(c('\n', '[[:punct:]]', 'nbsp', '[[:digit:]]', '[[:symbol:]]'),
+            collapse = '|'),
+      ' '
+    ) %>%
     str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
     tolower() %>%
     str_replace_all("\\s+", " ")
+  return(clean_text)
 }
 
-# function to apply to claims data
-parse_data <- function(.df){
-  out <- .df %>%
-    filter(str_detect(text_tmp, '<!')) %>%
-    rowwise() %>%
-    mutate(text_clean = parse_fn(text_tmp)) %>%
-    unnest(text_clean) 
-  return(out)
+parse_fn_header <- function(.html){
+  
+  doc <- read_html(.html)
+  
+  if(all(is.na(doc))){
+    return("")
+  }
+  
+  raw_text <- doc %>%
+    # Add in header collection
+    html_elements("p, h1, h2, h3, h4, h5, h6") %>%
+    html_text2() %>%
+    str_c(collapse = " ")
+  
+  clean_text <- raw_text %>%
+    rm_url() %>%
+    rm_email() %>%
+    str_remove_all("'") %>%
+    str_replace_all(
+      paste(c('\n', '[[:punct:]]', 'nbsp', '[[:digit:]]', '[[:symbol:]]'),
+            collapse = '|'),
+      ' '
+    ) %>%
+    str_replace_all("([a-z])([A-Z])", "\\1 \\2") %>%
+    tolower() %>%
+    str_replace_all("\\s+", " ")
+  return(clean_text)
 }
 
+# Preprocess data
+claims_paragraph_data <- claims_raw %>%
+  filter(str_detect(text_tmp, '<!')) %>%
+  rowwise() %>%
+  mutate(text_clean = parse_fn_paragraph(text_tmp)) %>%
+  ungroup() %>%
+  filter(text_clean != "") %>%
+  select(.id, bclass, text_clean)
+
+claims_header_data <- claims_raw %>%
+  filter(str_detect(text_tmp, '<!')) %>%
+  rowwise() %>%
+  mutate(text_clean = parse_fn_header(text_tmp)) %>%
+  ungroup() %>%
+  filter(text_clean != "") %>%
+  select(.id, bclass, text_clean)
+
+# Setup NLP tokenizers, lemmatizer, and TF-IDF matrix calculation
 nlp_fn <- function(parse_data.out){
   out <- parse_data.out %>% 
     unnest_tokens(output = token, 
@@ -57,3 +106,23 @@ nlp_fn <- function(parse_data.out){
                 values_fill = 0)
   return(out)
 }
+
+# Get DTM data
+dtm_paragraph <- nlp_fn(claims_paragraph_data)
+dtm_header <- nlp_fn(claims_header_data)
+
+# Save cleaned data for paragraph only (default training data)
+output_dir <- "../data"
+file_name <- "claims-cleaned.RData"
+full_path <- file.path(output_dir, file_name)
+
+# Save the objects
+save(dtm_paragraph, file = full_path)
+
+# Save cleaned data for paragraph + headers (for prelim task 1)
+output_dir <- "../data"
+file_name <- "claims-cleaned-headers.RData"
+full_path <- file.path(output_dir, file_name)
+
+# Save the objects
+save(dtm_header, file = full_path)
